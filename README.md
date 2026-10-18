@@ -25,8 +25,7 @@ pip install -r requirements.txt
 python -m src.eda
 ```
 
-The dataset downloads automatically on the first run. No API keys are needed
-([`.env.example`](.env.example) only matters for a remote MLflow server).
+The dataset downloads automatically on the first run. No API keys needed.
 
 ## Pipeline
 
@@ -35,7 +34,7 @@ Run each step from the project root, with the virtual environment active.
 | # | Step | Command | Status |
 |---|------|---------|--------|
 | 1 | EDA, problem framing, stratified split | `python -m src.eda` | done |
-| 2 | Feature engineering | | planned |
+| 2 | Feature engineering + ablation | `python -m src.features` | done |
 | 3 | Class imbalance: metrics + remedy | | planned |
 | 4 | Model comparison (3 models) | | planned |
 | 5 | One Pipeline: ColumnTransformer + model | | planned |
@@ -54,6 +53,7 @@ src/
   config.py       loads config.yaml
   data.py         load, rename, target, drop leakage, train/test split, CV folds
   eda.py          step 1: figures and tables
+  features.py     step 2: engineered features + preprocessing (imputer, scaler, one-hot)
 reports/
   figures/        plots used in the report
   tables/         CSV results used in the report
