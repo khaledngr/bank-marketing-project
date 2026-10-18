@@ -110,7 +110,8 @@ def main() -> None:
     rate_bars(ax, t, "Subscription rate by call duration (quintiles) - dropped", base)
     save(fig, "eda_duration_leakage")
 
-    # Temporal drift: the file is ordered by contact date (May 2008 - Nov 2010) but has no year.
+    # Temporal drift: UCI documents this file as "ordered by date" (campaigns May 2008 - Nov 2010),
+    # so row order is real chronology, not an assumption. There is no year column to split on.
     deciles = pd.qcut(np.arange(len(full)), 10, labels=range(1, 11))
     t = rates(full, deciles)
     fig, ax = plt.subplots(figsize=(6, 3))
@@ -122,6 +123,11 @@ def main() -> None:
     ax.set_title("Subscription rate rises over time", loc="left")
     save(fig, "eda_drift_by_row_order")
 
+    # Integrity checks (S1): duplicates and values outside their documented range.
+    print(f"duplicated rows: {full.duplicated().sum()} | missing cells: {full.isna().sum().sum()}")
+    print(f"age {full['age'].min()}-{full['age'].max()} | campaign >= 1: {(full['campaign'] >= 1).all()}"
+          f" | pdays is -1 or >= 1: {((full['pdays'] == -1) | (full['pdays'] >= 1)).all()}"
+          f" | negative balances (overdrafts, valid): {(full['balance'] < 0).mean():.1%}\n")
     print(overview.round(4).to_string())
     print()
     print(profile.to_string(index=False))

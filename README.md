@@ -1,10 +1,11 @@
 # Bank Marketing: who should the bank call?
 
+MSc group project, *Supervised Learning & Model Engineering*, Albert School, October 2026.\
+Team: Khaled · Alzira
+
 End-to-end machine-learning proof of concept: from raw data to a served prediction endpoint.
 A bank phones clients to sell a term deposit. Each call costs money and each subscription earns
 money, so we predict who is likely to subscribe and call only the clients worth calling.
-
-MSc group project, *Supervised Learning & Model Engineering*, Albert School, October 2026.
 
 ## At a glance
 
@@ -75,10 +76,6 @@ data/             dataset cache (git-ignored)
 
 ## Known limitation
 
-The rows are in time order (May 2008 to Nov 2010, no year column) and the subscription rate rises
-from 3% to 47% across the file. A random split mixes periods, so test scores are likely
-optimistic for future campaigns.
-
-## Team
-
-Khaled · Alzira
+UCI documents the file as ordered by date (campaigns from May 2008 to Nov 2010, no year column),
+and the subscription rate rises from 3% to 47% across the file. A random split mixes periods,
+so test scores are likely optimistic for future campaigns.
