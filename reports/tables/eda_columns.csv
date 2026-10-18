@@ -1,0 +1,17 @@
+column,type,n_unique,share_unknown_or_-1
+age,numeric,77,0.0
+job,categorical,12,0.0065
+marital,categorical,3,0.0
+education,categorical,4,0.041
+default,categorical,2,0.0
+balance,numeric,6597,0.0
+housing,categorical,2,0.0
+loan,categorical,2,0.0
+contact,categorical,3,0.2872
+day,numeric,31,0.0
+month,categorical,12,0.0
+duration,numeric,1509,0.0
+campaign,numeric,47,0.0
+pdays,numeric,533,0.818
+previous,numeric,41,0.0
+poutcome,categorical,4,0.8181
