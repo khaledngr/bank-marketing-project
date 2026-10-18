@@ -1,0 +1,24 @@
+# Python environment and caches
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Data caches (re-downloaded by fetch_openml) and generated artifacts
+data/
+artifacts/
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Notebooks (supplementary only)
+.ipynb_checkpoints/
+
+# Editors and OS files
+.vscode/
+.idea/
+.DS_Store

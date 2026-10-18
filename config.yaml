@@ -1,0 +1,22 @@
+# Single source of truth for paths, seeds and business assumptions.
+# Every script reads this file, so changing a value here changes it everywhere.
+
+seed: 42
+
+paths:
+  data_home: data/openml      # fetch_openml download cache (git-ignored)
+  figures: reports/figures
+  tables: reports/tables
+  models: artifacts/models    # fitted pipelines (git-ignored)
+
+data:
+  openml_id: 1461
+  positive_class: "2"         # 11.7% of rows: the client subscribed
+  test_size: 0.20             # held out once, scored only at the very end
+  cv_folds: 5                 # validation = stratified 5-fold CV on the other 80%
+
+# Assumptions, stated in the report. Calling a client is worth it when
+# p(subscribe) * revenue > cost, i.e. above a break-even probability of 5 / 50 = 0.10.
+business:
+  cost_per_call: 5            # EUR: agent time + telephony for one call
+  revenue_per_subscription: 50  # EUR: expected margin from one term deposit
