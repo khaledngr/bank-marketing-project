@@ -36,8 +36,8 @@ Run each step from the project root, with the virtual environment active.
 | 1 | EDA, problem framing, stratified split | `python -m src.eda` | done |
 | 2 | Feature engineering + ablation | `python -m src.features` | done |
 | 3 | Class imbalance: remedies + cost-based threshold | `python -m src.imbalance` | done |
-| 4 | Model comparison (3 models) | | planned |
-| 5 | One Pipeline: ColumnTransformer + model | | planned |
+| 4 | Model comparison: logistic regression, random forest, LightGBM | `python -m src.models` | done |
+| 5 | One Pipeline: features + ColumnTransformer + model | `build_pipeline()` in `src/models.py` | done |
 | 6 | Optuna tuning with stratified CV | | planned |
 | 7 | Experiment tracking (MLflow) | | planned |
 | 8 | Explainability (SHAP) | | planned |
@@ -55,6 +55,7 @@ src/
   eda.py          step 1: figures and tables
   features.py     step 2: engineered features + preprocessing (imputer, scaler, one-hot)
   imbalance.py    step 3: compare remedies, pick the profit-maximising threshold
+  models.py       steps 4-5: the single Pipeline + 3-model comparison
   evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit
   plots.py        shared figure style
 reports/
