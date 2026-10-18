@@ -1,52 +1,80 @@
 # Bank Marketing: who should the bank call?
 
-Group project for **Supervised Learning & Model Engineering** (Ilana Sebag, Albert School, Fall 2026).
-Team: Khaled Elnagar, Alzira Ferreira.
+End-to-end machine-learning proof of concept: from raw data to a served prediction endpoint.
+A bank phones clients to sell a term deposit. Each call costs money and each subscription earns
+money, so we predict who is likely to subscribe and call only the clients worth calling.
 
-## Goal
+MSc group project, *Supervised Learning & Model Engineering*, Albert School, October 2026.
 
-A Portuguese bank phones clients to sell a term deposit. Every call costs money; every
-subscription earns money. We build an end-to-end proof of concept, from the raw data to a served
-prediction endpoint, that scores each client's probability of subscribing so the bank calls only
-the clients for whom a call is expected to pay off.
+## At a glance
 
-- **Dataset:** UCI Bank Marketing, OpenML id 1461 (45,211 clients, 11.7% subscribed).
-- **Target:** `y = 1` if the client subscribed (OpenML `Class == "2"`).
-- **Business assumptions** (in [`config.yaml`](config.yaml)): EUR 5 per call, EUR 50 margin per
-  subscription, so a call is worth it when the predicted probability is above 0.10.
+| | |
+|---|---|
+| **Data** | UCI Bank Marketing ([OpenML 1461](https://www.openml.org/d/1461)): 45,211 clients, 16 features |
+| **Target** | `y = 1` if the client subscribed (11.7% of clients) |
+| **Removed** | `duration`: only known after the call, so it would leak the answer |
+| **Split** | 80% train (5-fold stratified CV for validation), 20% test scored once at the end |
+| **Decision rule** | Call if P(subscribe) x EUR 50 > EUR 5 call cost, i.e. P > 0.10 (see `config.yaml`) |
+| **Models** | Logistic regression, Random Forest, LightGBM, in one scikit-learn Pipeline |
 
-## Setup
-
-Requires Python 3.13.
+## Quickstart
 
 ```bash
-python3.13 -m venv .venv
-source .venv/bin/activate
+python3.13 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+python -m src.eda
 ```
 
-No secrets are needed. [`.env.example`](.env.example) only lists the variables you would need for a
-remote MLflow server.
+The dataset downloads automatically on the first run. No API keys are needed
+([`.env.example`](.env.example) only matters for a remote MLflow server).
+
+## Pipeline
+
+Run each step from the project root, with the virtual environment active.
+
+| # | Step | Command | Status |
+|---|------|---------|--------|
+| 1 | EDA, problem framing, stratified split | `python -m src.eda` | done |
+| 2 | Feature engineering | | planned |
+| 3 | Class imbalance: metrics + remedy | | planned |
+| 4 | Model comparison (3 models) | | planned |
+| 5 | One Pipeline: ColumnTransformer + model | | planned |
+| 6 | Optuna tuning with stratified CV | | planned |
+| 7 | Experiment tracking (MLflow) | | planned |
+| 8 | Explainability (SHAP) | | planned |
+| 9 | Calibration | | planned |
+| 10 | Fairness audit on age groups | | planned |
+| | Prediction API (FastAPI) | | planned |
 
 ## Project structure
 
 ```
-config.yaml        paths, seed, split sizes, business costs
-src/               all project code (run each step as a module, see below)
-reports/figures/   plots used in the report
-reports/tables/    CSV tables used in the report
-artifacts/         fitted models (git-ignored)
-data/              OpenML download cache (git-ignored)
+config.yaml       paths, seed, split sizes, business costs
+src/
+  config.py       loads config.yaml
+  data.py         load, rename, target, drop leakage, train/test split, CV folds
+  eda.py          step 1: figures and tables
+reports/
+  figures/        plots used in the report
+  tables/         CSV results used in the report
+artifacts/        fitted models (git-ignored)
+data/             dataset cache (git-ignored)
 ```
 
-## How to run
+## Guarantees against leakage
 
-All commands run from the project root with the virtual environment active.
+- `duration` is dropped before any split.
+- The test set is split off once (seed 42) and only scored at the very end.
+- All preprocessing sits inside the Pipeline, so it is refitted inside every CV fold.
+- EDA uses the training set only.
+- One seed in `config.yaml` drives every split, model and sampler.
 
-_Steps are added here as they are implemented._
+## Known limitation
 
-## Reproducibility
+The rows are in time order (May 2008 to Nov 2010, no year column) and the subscription rate rises
+from 3% to 47% across the file. A random split mixes periods, so test scores are likely
+optimistic for future campaigns.
 
-- One seed (`seed: 42` in `config.yaml`) is passed to every split, model and sampler.
-- The test set is split off once with a fixed seed and is only scored at the very end.
-- All preprocessing lives inside the scikit-learn Pipeline, so it is refitted inside every CV fold.
+## Team
+
+Khaled · Alzira
