@@ -7,24 +7,14 @@ for any decision we make.
 
 Run: python -m src.eda
 """
-import matplotlib
-
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import PercentFormatter
 
 from src.config import path
 from src.data import cv_splitter, load_frame, split_frame
-
-BLUE, GREY, INK, MUTED = "#2a78d6", "#8a8984", "#0b0b0b", "#52514e"
-plt.rcParams.update({
-    "figure.facecolor": "#fcfcfb", "axes.facecolor": "#fcfcfb", "savefig.dpi": 150,
-    "axes.edgecolor": GREY, "axes.labelcolor": MUTED, "xtick.color": MUTED, "ytick.color": MUTED,
-    "text.color": INK, "axes.spines.top": False, "axes.spines.right": False,
-    "axes.grid": True, "grid.color": "#e6e5e0", "grid.linewidth": 0.6, "axes.axisbelow": True,
-    "font.size": 9, "axes.titlesize": 10, "axes.titleweight": "bold",
-})
+from src.plots import BLUE, GREY, save
 
 MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
 
@@ -48,14 +38,8 @@ def rate_bars(ax, table: pd.DataFrame, title: str, base: float) -> None:
     ax.axvline(base, color=GREY, linestyle="--", linewidth=1)
     ax.invert_yaxis()
     ax.set_title(title, loc="left")
-    ax.xaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1, decimals=0))
+    ax.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
     ax.grid(axis="y", visible=False)
-
-
-def save(fig, name: str) -> None:
-    fig.tight_layout()
-    fig.savefig(path("figures") / f"{name}.png")
-    plt.close(fig)
 
 
 def split_overview(full: pd.DataFrame, train: pd.DataFrame, test: pd.DataFrame) -> pd.DataFrame:
@@ -134,7 +118,7 @@ def main() -> None:
     ax.set_xticks(range(1, 11))
     ax.set_ylim(bottom=0)
     ax.set_xlabel("Tenth of the file in original row order (earliest -> latest)")
-    ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1, decimals=0))
+    ax.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
     ax.set_title("Subscription rate rises over time", loc="left")
     save(fig, "eda_drift_by_row_order")
 

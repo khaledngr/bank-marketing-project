@@ -35,7 +35,7 @@ Run each step from the project root, with the virtual environment active.
 |---|------|---------|--------|
 | 1 | EDA, problem framing, stratified split | `python -m src.eda` | done |
 | 2 | Feature engineering + ablation | `python -m src.features` | done |
-| 3 | Class imbalance: metrics + remedy | | planned |
+| 3 | Class imbalance: remedies + cost-based threshold | `python -m src.imbalance` | done |
 | 4 | Model comparison (3 models) | | planned |
 | 5 | One Pipeline: ColumnTransformer + model | | planned |
 | 6 | Optuna tuning with stratified CV | | planned |
@@ -54,6 +54,9 @@ src/
   data.py         load, rename, target, drop leakage, train/test split, CV folds
   eda.py          step 1: figures and tables
   features.py     step 2: engineered features + preprocessing (imputer, scaler, one-hot)
+  imbalance.py    step 3: compare remedies, pick the profit-maximising threshold
+  evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit
+  plots.py        shared figure style
 reports/
   figures/        plots used in the report
   tables/         CSV results used in the report
