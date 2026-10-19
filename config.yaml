@@ -15,6 +15,12 @@ data:
   test_size: 0.20             # held out once, scored only at the very end
   cv_folds: 5                 # validation = stratified 5-fold CV on the other 80%
 
+# MLflow: local SQLite store + artifact folder, both git-ignored.
+tracking:
+  db: mlflow.db
+  artifacts: mlruns
+  experiment: bank-marketing
+
 # Assumptions, stated in the report. Calling a client is worth it when
 # p(subscribe) * revenue > cost, i.e. above a break-even probability of 5 / 50 = 0.10.
 business:

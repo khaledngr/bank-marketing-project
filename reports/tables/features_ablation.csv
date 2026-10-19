@@ -1,4 +1,4 @@
-features,model,AP_mean,AP_std,ROC_AUC_mean
+features,model,AP,AP_fold_std,ROC_AUC
 raw columns,logistic_regression,0.40212754645262916,0.008376327885302985,0.7628273370499828
 raw columns,lightgbm,0.44503261757230295,0.011336841000113647,0.796707053660574
 + contacted_before,logistic_regression,0.40192174843412387,0.008450038367229776,0.7628215783671117

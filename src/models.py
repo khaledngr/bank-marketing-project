@@ -27,6 +27,7 @@ from src.data import load_split
 from src.evaluation import best_threshold, out_of_fold, profit, summarize
 from src.features import make_preprocessing
 from src.plots import pr_and_profit
+from src.tracking import log_candidate, parent_run
 
 # Ordered from simplest to most flexible, so the table reads as "what each step bought".
 MODELS = {
@@ -50,20 +51,24 @@ def main() -> None:
              "threshold": 0.0, "precision": y.mean(), "recall": 1.0, "share_called": 1.0,
              "profit_per_1000": profit(y, call_everyone) * 1000 / len(y)}]
     scores = {}
-    for name in MODELS:
-        start = time.perf_counter()
-        oof, fold_ap = out_of_fold(build_pipeline(name), X, y)
-        seconds = time.perf_counter() - start
-        scores[name] = oof
-        rows.append({"model": name, **summarize(y, oof, best_threshold(y, oof)),
-                     # CV convention (S5): AP is the mean of the 5 fold scores, with its spread.
-                     "AP": fold_ap.mean(), "AP_fold_std": fold_ap.std(),
-                     "cv_seconds": seconds})
+    table_file = path("tables") / "models_comparison.csv"
+    with parent_run("models_comparison", [table_file, path("figures") / "models_pr_and_profit.png"]):
+        for name in MODELS:
+            pipe = build_pipeline(name)
+            start = time.perf_counter()
+            oof, fold_ap = out_of_fold(pipe, X, y)
+            seconds = time.perf_counter() - start
+            scores[name] = oof
+            metrics = {**summarize(y, oof, best_threshold(y, oof)),
+                       # CV convention (S5): AP is the mean of the 5 fold scores, with its spread.
+                       "AP": fold_ap.mean(), "AP_fold_std": fold_ap.std(), "cv_seconds": seconds}
+            rows.append({"model": name, **metrics})
+            log_candidate(name, pipe.named_steps["model"].get_params(), metrics, fold_ap)
 
-    table = pd.DataFrame(rows)
-    table.to_csv(path("tables") / "models_comparison.csv", index=False)
-    print(table.round(3).to_string(index=False))
-    pr_and_profit(y, scores, "models_pr_and_profit")
+        table = pd.DataFrame(rows)
+        table.to_csv(table_file, index=False)
+        print(table.round(3).to_string(index=False))
+        pr_and_profit(y, scores, "models_pr_and_profit")
 
 
 if __name__ == "__main__":

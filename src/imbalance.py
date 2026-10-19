@@ -25,6 +25,7 @@ from src.data import load_split
 from src.evaluation import best_threshold, out_of_fold, summarize
 from src.features import make_preprocessing
 from src.plots import pr_and_profit
+from src.tracking import log_candidate, parent_run
 
 
 def remedies(pos_weight: float) -> dict:
@@ -50,20 +51,26 @@ def main() -> None:
     pos_weight = (y == 0).sum() / (y == 1).sum()  # from training labels only
 
     rows, scores = [], {}
-    for name, pipe in remedies(pos_weight).items():
-        oof, fold_ap = out_of_fold(pipe, X, y)
-        scores[name] = oof
-        for rule, t in [("default 0.5", 0.5), ("profit-optimal", best_threshold(y, oof))]:
-            rows.append({"remedy": name, "threshold_rule": rule, **summarize(y, oof, t),
-                         # CV convention (S5): AP is the mean of the 5 fold scores.
-                         "AP": fold_ap.mean(), "AP_fold_std": fold_ap.std()})
-    table = pd.DataFrame(rows)
-    table.to_csv(path("tables") / "imbalance_remedies.csv", index=False)
+    table_file = path("tables") / "imbalance_remedies.csv"
+    figure = path("figures") / "imbalance_pr_and_profit.png"
+    with parent_run("imbalance_remedies", [table_file, figure]):
+        for name, pipe in remedies(pos_weight).items():
+            oof, fold_ap = out_of_fold(pipe, X, y)
+            scores[name] = oof
+            for rule, t in [("default 0.5", 0.5), ("profit-optimal", best_threshold(y, oof))]:
+                metrics = {**summarize(y, oof, t),
+                           # CV convention (S5): AP is the mean of the 5 fold scores.
+                           "AP": fold_ap.mean(), "AP_fold_std": fold_ap.std()}
+                rows.append({"remedy": name, "threshold_rule": rule, **metrics})
+                params = {"remedy": name, "threshold_rule": rule,
+                          **pipe.named_steps["model"].get_params()}
+                log_candidate(f"{name} | {rule}", params, metrics, fold_ap)
 
-    print(f"positive rate {y.mean():.3f} | scale_pos_weight {pos_weight:.2f}\n")
-    print(table.round(3).to_string(index=False))
-
-    pr_and_profit(y, scores, "imbalance_pr_and_profit")
+        table = pd.DataFrame(rows)
+        table.to_csv(table_file, index=False)
+        print(f"positive rate {y.mean():.3f} | scale_pos_weight {pos_weight:.2f}\n")
+        print(table.round(3).to_string(index=False))
+        pr_and_profit(y, scores, "imbalance_pr_and_profit")
 
 
 if __name__ == "__main__":

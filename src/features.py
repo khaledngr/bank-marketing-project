@@ -19,6 +19,7 @@ from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardSc
 
 from src.config import SEED, path
 from src.data import cv_splitter, load_split
+from src.tracking import log_candidate, parent_run
 
 
 def contacted_before(X: pd.DataFrame) -> pd.DataFrame:
@@ -88,21 +89,27 @@ def main() -> None:
         "lightgbm": LGBMClassifier(random_state=SEED, verbose=-1),
     }
     rows = []
-    for k in range(len(FEATURE_STEPS) + 1):
-        label = "raw columns" if k == 0 else "+ " + FEATURE_STEPS[k - 1].__name__
-        for name, model in models.items():
-            pipe = Pipeline([("prep", make_preprocessing(FEATURE_STEPS[:k])), ("model", model)])
-            cv = cross_validate(pipe, X, y, cv=cv_splitter(),
-                                scoring=["average_precision", "roc_auc"])
-            rows.append({
-                "features": label, "model": name,
-                "AP_mean": cv["test_average_precision"].mean(),
-                "AP_std": cv["test_average_precision"].std(),
-                "ROC_AUC_mean": cv["test_roc_auc"].mean(),
-            })
-    table = pd.DataFrame(rows)
-    table.to_csv(path("tables") / "features_ablation.csv", index=False)
-    print(table.round(4).to_string(index=False))
+    table_file = path("tables") / "features_ablation.csv"
+    with parent_run("feature_ablation", [table_file]):
+        for k in range(len(FEATURE_STEPS) + 1):
+            label = "raw columns" if k == 0 else "+ " + FEATURE_STEPS[k - 1].__name__
+            for name, model in models.items():
+                pipe = Pipeline([("prep", make_preprocessing(FEATURE_STEPS[:k])), ("model", model)])
+                cv = cross_validate(pipe, X, y, cv=cv_splitter(),
+                                    scoring=["average_precision", "roc_auc"])
+                # Same metric names as every other experiment, so MLflow lines them up.
+                metrics = {
+                    "AP": cv["test_average_precision"].mean(),
+                    "AP_fold_std": cv["test_average_precision"].std(),
+                    "ROC_AUC": cv["test_roc_auc"].mean(),
+                }
+                rows.append({"features": label, "model": name, **metrics})
+                log_candidate(f"{name} | {label}", {"model": name, "features": label},
+                              metrics, cv["test_average_precision"])
+
+        table = pd.DataFrame(rows)
+        table.to_csv(table_file, index=False)
+        print(table.round(4).to_string(index=False))
 
 
 if __name__ == "__main__":

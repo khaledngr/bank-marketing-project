@@ -40,11 +40,23 @@ Run each step from the project root, with the virtual environment active.
 | 4 | Model comparison: logistic regression, random forest, LightGBM | `python -m src.models` | done |
 | 5 | One Pipeline: features + ColumnTransformer + model | `build_pipeline()` in `src/models.py` | done |
 | 6 | Optuna tuning with stratified CV | | planned |
-| 7 | Experiment tracking (MLflow) | | planned |
+| 7 | Experiment tracking (MLflow) | logged automatically by steps 2-4 | done |
 | 8 | Explainability (SHAP) | | planned |
 | 9 | Calibration | | planned |
 | 10 | Fairness audit on age groups | | planned |
 | | Prediction API (FastAPI) | | planned |
+
+### Experiment tracking
+
+Every experiment script logs to a local MLflow store: one parent run per script (its table and
+figure as artifacts) and one child run per candidate (parameters, CV metrics, AP of each fold,
+git commit). To browse them:
+
+```bash
+mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+then open http://127.0.0.1:5000 and the `bank-marketing` experiment.
 
 ## Project structure
 
@@ -57,12 +69,14 @@ src/
   features.py     step 2: engineered features + preprocessing (imputer, scaler, one-hot)
   imbalance.py    step 3: compare remedies, pick the profit-maximising threshold
   models.py       steps 4-5: the single Pipeline + 3-model comparison
+  tracking.py     step 7: MLflow logging (one parent run per experiment, one child per candidate)
   evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit
   plots.py        shared figure style
 reports/
   figures/        plots used in the report
   tables/         CSV results used in the report
 artifacts/        fitted models (git-ignored)
+mlflow.db, mlruns/ MLflow runs and their artifacts (git-ignored, rebuilt by re-running the steps)
 data/             dataset cache (git-ignored)
 ```
 
