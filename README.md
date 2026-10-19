@@ -31,7 +31,7 @@ The dataset downloads automatically on the first run. No API keys needed.
 ## Pipeline
 
 Run each step from the project root, with the virtual environment active, in this order
-(steps 8-10 read the settings chosen in step 6).
+(steps 8-11 read the settings chosen in steps 6 and 10).
 
 | # | Step | Command | Status |
 |---|------|---------|--------|
@@ -45,6 +45,7 @@ Run each step from the project root, with the virtual environment active, in thi
 | 8 | Explainability: gain, permutation, SHAP (global + 4 clients) | `python -m src.explain` | done |
 | 9 | Calibration: reliability diagram, Brier, ECE; raw vs Platt vs isotonic | `python -m src.calibration` | done |
 | 10 | Fairness audit on age groups + mitigation (designed on CV; test comparison in the final step) | `python -m src.fairness` | done |
+| 11 | Final model + one-time test evaluation (all decisions frozen) | `python -m src.final` | done |
 | | Prediction API (FastAPI) | | planned |
 
 ### Experiment tracking
@@ -76,15 +77,35 @@ src/
   explain.py      step 8: global importance (3 views) + local SHAP explanations
   calibration.py  step 9: are the probabilities honest? (reliability, Brier, ECE)
   fairness.py     step 10: age-group audit (equal opportunity) + age-group thresholds
+  final.py        step 11: refit on all training data, score the test set once, save the model
   evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit, ECE
   plots.py        shared figure style
 reports/
   figures/        plots used in the report
   tables/         CSV results used in the report
-artifacts/        fitted models (git-ignored)
+artifacts/        final_model.joblib, used by the API (git-ignored, rebuilt by step 11)
 mlflow.db, mlruns/ MLflow runs and their artifacts (git-ignored, rebuilt by re-running the steps)
 data/             dataset cache (git-ignored)
 ```
+
+## Results on the untouched test set
+
+Tuned LightGBM, threshold 0.11 chosen on cross-validation, scored once on the 20% test set
+(9,043 clients).
+
+| | Test | Cross-validation | Call everyone |
+|---|---|---|---|
+| Average precision | 0.476 | 0.459 | 0.117 |
+| ROC-AUC | 0.809 | 0.802 | 0.5 |
+| Clients called | 24% | 24% | 100% |
+| Subscribers reached (recall) | 67% | 66% | 100% |
+| Calls that convert (precision) | 33% | 32% | 12% |
+| Profit per 1,000 clients | EUR 2,711 | EUR 2,676 | EUR 850 |
+| Calibration (Brier / ECE) | 0.080 / 0.010 | 0.081 / 0.006 | |
+
+Fairness (equal opportunity across age groups, test set): the recall gap between age groups
+drops from 35 to 5 points with age-group thresholds, at a cost of 6% of profit
+(EUR 2,711 to EUR 2,551 per 1,000 clients). Details in `reports/tables/final_test_*.csv`.
 
 ## Guarantees against leakage
 

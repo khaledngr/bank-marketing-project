@@ -35,6 +35,8 @@ from src.plots import SERIES, save
 from src.tracking import log_candidate, parent_run
 
 GROUPS = ["young <25", "working 25-59", "senior 60+"]
+# Same colour for the same setting in every figure (CV and test).
+SETTING_COLORS = {"before": SERIES[0], "unawareness": SERIES[1], "after": SERIES[2]}
 
 
 def age_group(age: pd.Series) -> np.ndarray:
@@ -88,6 +90,29 @@ def equal_opportunity_thresholds(y: pd.Series, scores: np.ndarray, groups: np.nd
     return chosen
 
 
+def plot_groups(table: pd.DataFrame, name: str) -> None:
+    """Recall, unwanted calls and call rate per age group, one bar colour per setting."""
+    settings = list(table["setting"].unique())
+    width = 0.8 / len(settings)
+    fig, axes = plt.subplots(1, 3, figsize=(12, 3.8), sharey=True)
+    metrics = [("recall", "Recall: subscribers we call"),
+               ("false_positive_rate", "Unwanted calls (FPR)"), ("call_rate", "Share of group called")]
+    for ax, (col, title) in zip(axes, metrics):
+        for k, setting in enumerate(settings):
+            values = table.loc[table["setting"] == setting, col]
+            offset = (k - (len(settings) - 1) / 2) * width
+            ax.bar(np.arange(len(GROUPS)) + offset, values, width,
+                   color=SETTING_COLORS[setting.split(":")[0]], label=setting)
+        ax.set_xticks(range(len(GROUPS)), GROUPS)
+        ax.set_title(title, loc="left")
+        ax.grid(axis="x", visible=False)
+    # Headroom above 1.0 keeps the legend clear of the bars.
+    axes[0].set_ylim(0, 1.35)
+    axes[0].set_yticks(np.linspace(0, 1, 6))
+    axes[0].legend(loc="upper left", fontsize=8)
+    save(fig, name)
+
+
 def main() -> None:
     X, _, y, _ = load_split()
     params = json.loads((path("tables") / "best_params.json").read_text())["lightgbm"]
@@ -133,22 +158,7 @@ def main() -> None:
         pd.DataFrame(summary).to_csv(summary_file, index=False)
         thresholds_file.write_text(json.dumps({"target_recall": target, "thresholds": per_group}, indent=2))
 
-        fig, axes = plt.subplots(1, 3, figsize=(12, 3.8), sharey=True)
-        metrics = [("recall", "Recall: subscribers we call"),
-                   ("false_positive_rate", "Unwanted calls (FPR)"), ("call_rate", "Share of group called")]
-        width = 0.26
-        for ax, (col, title) in zip(axes, metrics):
-            for k, (color, name) in enumerate(zip(SERIES, settings)):
-                values = table.loc[table["setting"] == name, col]
-                ax.bar(np.arange(len(GROUPS)) + (k - 1) * width, values, width, color=color, label=name)
-            ax.set_xticks(range(len(GROUPS)), GROUPS)
-            ax.set_title(title, loc="left")
-            ax.grid(axis="x", visible=False)
-        # Headroom above 1.0 keeps the legend clear of the bars.
-        axes[0].set_ylim(0, 1.35)
-        axes[0].set_yticks(np.linspace(0, 1, 6))
-        axes[0].legend(loc="upper left", fontsize=8)
-        save(fig, "fairness_cv")
+        plot_groups(table, "fairness_cv")
 
     print(f"target recall (overall, one threshold {t}): {target:.3f}  |  age-group thresholds: {per_group}\n")
     cols = ["setting", "group", "threshold", "clients", "subscribers", "subscription_rate", "call_rate",
