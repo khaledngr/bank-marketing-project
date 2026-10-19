@@ -1,0 +1,5 @@
+case,probability,subscribed,age,job,marital,education,default,balance,housing,loan,contact,day,month,campaign,pdays,previous,poutcome,top_contributions
+caught subscriber (TP),0.365089217613946,1,29,student,single,unknown,no,7585,no,no,cellular,3,mar,2,198,1,failure,month=mar +1.08; contact=cellular +0.46; poutcome=failure -0.24; housing=no +0.20; day=3 +0.18
+missed subscriber (FN),0.0072735214199631205,1,50,entrepreneur,married,primary,no,461,yes,no,unknown,15,may,32,-1,0,unknown,campaign=32 -1.29; contact=unknown -0.53; marital=married -0.15; age=50 -0.15; month=may -0.15
+false alarm (FP),0.86424995581512,0,61,retired,married,secondary,no,1058,no,no,cellular,27,oct,1,92,5,success,poutcome=success +1.56; month=oct +0.66; pdays=92 +0.64; contact=cellular +0.25; day=27 +0.23
+clear no (TN),0.05274129847150112,0,34,management,married,tertiary,no,255,no,no,cellular,27,aug,9,-1,0,unknown,campaign=9 -0.33; month=aug -0.30; contact=cellular +0.22; housing=no +0.14; education=tertiary +0.10

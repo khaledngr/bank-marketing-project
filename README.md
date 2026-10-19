@@ -30,7 +30,8 @@ The dataset downloads automatically on the first run. No API keys needed.
 
 ## Pipeline
 
-Run each step from the project root, with the virtual environment active.
+Run each step from the project root, with the virtual environment active, in this order
+(step 8 reads the settings chosen in step 6).
 
 | # | Step | Command | Status |
 |---|------|---------|--------|
@@ -40,8 +41,8 @@ Run each step from the project root, with the virtual environment active.
 | 4 | Model comparison: logistic regression, random forest, LightGBM | `python -m src.models` | done |
 | 5 | One Pipeline: features + ColumnTransformer + model | `build_pipeline()` in `src/models.py` | done |
 | 6 | Optuna tuning with stratified CV (30 trials per model) | `python -m src.tuning` | done |
-| 7 | Experiment tracking (MLflow) | logged automatically by steps 2-4 and 6 | done |
-| 8 | Explainability (SHAP) | | planned |
+| 7 | Experiment tracking (MLflow) | logged automatically by steps 2-4, 6 and 8 | done |
+| 8 | Explainability: gain, permutation, SHAP (global + 4 clients) | `python -m src.explain` | done |
 | 9 | Calibration | | planned |
 | 10 | Fairness audit on age groups | | planned |
 | | Prediction API (FastAPI) | | planned |
@@ -71,6 +72,7 @@ src/
   models.py       steps 4-5: the single Pipeline + 3-model comparison
   tuning.py       step 6: Optuna search per model, search spaces in config.yaml
   tracking.py     step 7: MLflow logging (one parent run per experiment, one child per candidate)
+  explain.py      step 8: global importance (3 views) + local SHAP explanations
   evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit
   plots.py        shared figure style
 reports/
