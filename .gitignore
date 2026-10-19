@@ -22,3 +22,6 @@ mlflow.db
 .vscode/
 .idea/
 .DS_Store
+
+# LaTeX build log (the PDF itself is committed as a deliverable)
+report/*.log

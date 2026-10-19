@@ -93,7 +93,8 @@ src/
   imbalance.py    step 3: compare remedies, pick the profit-maximising threshold
   models.py       steps 4-5: the single Pipeline + 3-model comparison
   tuning.py       step 6: Optuna search per model, search spaces in config.yaml
-  tracking.py     step 7: MLflow logging (one parent run per experiment, one child per candidate)
+  tracking.py     step 7: MLflow logging (one parent run per experiment, one child per candidate);
+                  `python -m src.tracking` plots every logged Optuna trial
   explain.py      step 8: global importance (3 views) + local SHAP explanations
   calibration.py  step 9: are the probabilities honest? (reliability, Brier, ECE)
   fairness.py     step 10: age-group audit (equal opportunity) + age-group thresholds
@@ -104,6 +105,9 @@ src/
 reports/
   figures/        plots used in the report
   tables/         CSV results used in the report
+report/
+  main.tex        the written report (LaTeX); build with `tectonic -X compile report/main.tex`
+  main.pdf        the compiled report
 artifacts/        final_model.joblib, used by the API (git-ignored, rebuilt by step 11)
 mlflow.db, mlruns/ MLflow runs and their artifacts (git-ignored, rebuilt by re-running the steps)
 data/             dataset cache (git-ignored)
