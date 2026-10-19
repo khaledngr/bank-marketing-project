@@ -10,7 +10,7 @@ profit-optimal threshold is chosen afterwards on the best model's out-of-fold sc
 The best CV score is slightly optimistic (the same folds picked the winner, see S5 nested CV);
 the untouched test set gives the honest number at the end.
 
-Run: python -m src.tuning      (about 10 minutes)
+Run: python -m src.tuning      (about 20 minutes)
 """
 import json
 
@@ -51,8 +51,11 @@ def tune(name: str, X: pd.DataFrame, y: pd.Series) -> optuna.Study:
 
     study = optuna.create_study(direction="maximize", study_name=name,
                                 sampler=optuna.samplers.TPESampler(seed=SEED))
-    with parent_run(f"optuna_{name}"):
+    trials_file = path("tables") / f"optuna_trials_{name}.csv"
+    with parent_run(f"optuna_{name}", [trials_file]):
         study.optimize(objective, n_trials=TUNING["n_trials"])
+        # Every trial's settings and score, kept as the study's artifact.
+        study.trials_dataframe().to_csv(trials_file, index=False)
     return study
 
 

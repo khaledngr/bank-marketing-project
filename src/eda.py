@@ -1,9 +1,9 @@
 """Step 1 - EDA and split checks.
 
-Everything is computed on the training 80% only: looking at the test set, even just to draw
-plots, would let it influence our modelling choices. The only exception is the row-order
-(drift) plot, which needs the original row order of the full file and uses no test labels
-for any decision we make.
+Every finding is computed on the training 80% only: looking at the test set, even just to draw
+plots, would let it influence our modelling choices. The full file appears in three checks that
+feed no modelling decision: the stratification table (size and rate of each part), the integrity
+checks (duplicates, ranges) and the drift plot, which needs the original row order.
 
 Run: python -m src.eda
 """

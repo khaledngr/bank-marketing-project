@@ -143,6 +143,7 @@ def main() -> None:
         ax.grid(axis="y", visible=False)
     save(fig, "importance_three_views")
 
+    np.random.seed(SEED)  # the beeswarm jitters dots with numpy's global random state
     shap.plots.beeswarm(shap_values, max_display=15, show=False)
     plt.gcf().set_size_inches(8, 6)
     plt.title("SHAP per client: right = pushes towards 'subscribes'", loc="left")

@@ -14,7 +14,7 @@ Three candidates on the tuned LightGBM, all scored out-of-fold (S7):
   so no calibrator ever sees its own training labels.
 S7 rule: prefer the simpler option when the differences are small.
 
-Run: python -m src.calibration     (about 3 minutes)
+Run: python -m src.calibration     (a few minutes)
 """
 import json
 

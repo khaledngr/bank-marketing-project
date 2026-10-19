@@ -74,7 +74,7 @@ src/
   tracking.py     step 7: MLflow logging (one parent run per experiment, one child per candidate)
   explain.py      step 8: global importance (3 views) + local SHAP explanations
   calibration.py  step 9: are the probabilities honest? (reliability, Brier, ECE)
-  evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit
+  evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit, ECE
   plots.py        shared figure style
 reports/
   figures/        plots used in the report
@@ -89,7 +89,10 @@ data/             dataset cache (git-ignored)
 - `duration` is dropped before any split.
 - The test set is split off once (seed 42) and only scored at the very end.
 - All preprocessing sits inside the Pipeline, so it is refitted inside every CV fold.
-- EDA uses the training set only.
+- Class weights, SMOTE and calibrators are fitted inside training folds only; the decision
+  threshold is chosen on out-of-fold scores, never on the test set.
+- EDA findings come from the training set only (the test set appears only in the
+  stratification check and the drift plot).
 - One seed in `config.yaml` drives every split, model and sampler.
 
 ## Known limitation
