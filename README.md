@@ -46,7 +46,27 @@ Run each step from the project root, with the virtual environment active, in thi
 | 9 | Calibration: reliability diagram, Brier, ECE; raw vs Platt vs isotonic | `python -m src.calibration` | done |
 | 10 | Fairness audit on age groups + mitigation (designed on CV; test comparison in the final step) | `python -m src.fairness` | done |
 | 11 | Final model + one-time test evaluation (all decisions frozen) | `python -m src.final` | done |
-| | Prediction API (FastAPI) | | planned |
+| 12 | Prediction API (FastAPI) | `uvicorn src.api:app --reload` | done |
+
+### Serving predictions
+
+After step 11 has saved the model, start the API:
+
+```bash
+uvicorn src.api:app --reload
+```
+
+Open http://127.0.0.1:8000/docs, choose **POST /predict**, then **Try it out** and **Execute**.
+Or from a terminal:
+
+```bash
+curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" -d '{"age": 67, "job": "retired", "marital": "married", "education": "tertiary", "default": "no", "balance": 4200, "housing": "no", "loan": "no", "contact": "cellular", "day": 12, "month": "oct", "campaign": 1, "pdays": 95, "previous": 2, "poutcome": "success"}'
+```
+
+The answer gives the probability of subscribing, the expected value of the call in EUR, and two
+decisions: `call` (one profit-optimal threshold) and `call_age_fair` (age-group thresholds from
+the fairness step). Invalid inputs (unknown category, age under 18, ...) are rejected with a
+message naming the field. `duration` is not an input: it is only known after the call.
 
 ### Experiment tracking
 
@@ -78,6 +98,7 @@ src/
   calibration.py  step 9: are the probabilities honest? (reliability, Brier, ECE)
   fairness.py     step 10: age-group audit (equal opportunity) + age-group thresholds
   final.py        step 11: refit on all training data, score the test set once, save the model
+  api.py          FastAPI app: POST /predict for one client, GET /health
   evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit, ECE
   plots.py        shared figure style
 reports/
