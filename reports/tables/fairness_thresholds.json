@@ -1,0 +1,8 @@
+{
+  "target_recall": 0.6632001890805956,
+  "thresholds": {
+    "young <25": 0.34,
+    "working 25-59": 0.09,
+    "senior 60+": 0.33
+  }
+}

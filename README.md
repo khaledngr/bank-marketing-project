@@ -31,7 +31,7 @@ The dataset downloads automatically on the first run. No API keys needed.
 ## Pipeline
 
 Run each step from the project root, with the virtual environment active, in this order
-(steps 8 and 9 read the settings chosen in step 6).
+(steps 8-10 read the settings chosen in step 6).
 
 | # | Step | Command | Status |
 |---|------|---------|--------|
@@ -41,10 +41,10 @@ Run each step from the project root, with the virtual environment active, in thi
 | 4 | Model comparison: logistic regression, random forest, LightGBM | `python -m src.models` | done |
 | 5 | One Pipeline: features + ColumnTransformer + model | `build_pipeline()` in `src/models.py` | done |
 | 6 | Optuna tuning with stratified CV (30 trials per model) | `python -m src.tuning` | done |
-| 7 | Experiment tracking (MLflow) | logged automatically by steps 2-4, 6, 8 and 9 | done |
+| 7 | Experiment tracking (MLflow) | logged automatically by steps 2-4, 6, 8, 9 and 10 | done |
 | 8 | Explainability: gain, permutation, SHAP (global + 4 clients) | `python -m src.explain` | done |
 | 9 | Calibration: reliability diagram, Brier, ECE; raw vs Platt vs isotonic | `python -m src.calibration` | done |
-| 10 | Fairness audit on age groups | | planned |
+| 10 | Fairness audit on age groups + mitigation (designed on CV; test comparison in the final step) | `python -m src.fairness` | done |
 | | Prediction API (FastAPI) | | planned |
 
 ### Experiment tracking
@@ -57,7 +57,8 @@ git commit). To browse them:
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
-then open http://127.0.0.1:5000 and the `bank-marketing` experiment.
+then open http://127.0.0.1:5000, switch to **Model training** and open the `bank-marketing`
+experiment. On a Mac, port 5000 is often taken by AirPlay: add `--port 5001` and open that port instead.
 
 ## Project structure
 
@@ -74,6 +75,7 @@ src/
   tracking.py     step 7: MLflow logging (one parent run per experiment, one child per candidate)
   explain.py      step 8: global importance (3 views) + local SHAP explanations
   calibration.py  step 9: are the probabilities honest? (reliability, Brier, ECE)
+  fairness.py     step 10: age-group audit (equal opportunity) + age-group thresholds
   evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit, ECE
   plots.py        shared figure style
 reports/
