@@ -42,6 +42,15 @@ def best_threshold(y: pd.Series, scores: np.ndarray) -> float:
     return float(profit_curve(y, scores).idxmax())
 
 
+def expected_calibration_error(y: pd.Series, scores: np.ndarray, n_bins: int = 10) -> float:
+    """ECE (S7): gap between mean predicted and observed rate in each of `n_bins` equal-width
+    bins, weighted by the share of clients in the bin."""
+    bins = np.minimum((scores * n_bins).astype(int), n_bins - 1)
+    frame = pd.DataFrame({"bin": bins, "p": scores, "y": np.asarray(y)})
+    per_bin = frame.groupby("bin").agg(n=("y", "size"), predicted=("p", "mean"), observed=("y", "mean"))
+    return float((per_bin["n"] / len(frame) * (per_bin["observed"] - per_bin["predicted"]).abs()).sum())
+
+
 def summarize(y: pd.Series, scores: np.ndarray, threshold: float) -> dict:
     """Threshold-free ranking metrics plus what happens if we call above `threshold`."""
     call = scores >= threshold
