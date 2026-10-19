@@ -1,0 +1,24 @@
+{
+  "logistic_regression": {
+    "solver": "saga",
+    "max_iter": 2000,
+    "C": 0.08121196384008403,
+    "l1_ratio": 0.8483458391664683
+  },
+  "random_forest": {
+    "n_estimators": 232,
+    "max_depth": 19,
+    "min_samples_leaf": 4,
+    "max_features": 0.20374130219223263
+  },
+  "lightgbm": {
+    "subsample_freq": 1,
+    "n_estimators": 560,
+    "learning_rate": 0.012721759335835737,
+    "num_leaves": 37,
+    "min_child_samples": 17,
+    "subsample": 0.8714311121436825,
+    "colsample_bytree": 0.5513732058171239,
+    "reg_lambda": 1.254082662069288
+  }
+}

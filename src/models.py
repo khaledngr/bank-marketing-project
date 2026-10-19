@@ -30,10 +30,11 @@ from src.plots import pr_and_profit
 from src.tracking import log_candidate, parent_run
 
 # Ordered from simplest to most flexible, so the table reads as "what each step bought".
+# Fixed settings come first so tuned hyperparameters (step 6) can override them.
 MODELS = {
-    "logistic_regression": lambda **p: LogisticRegression(max_iter=2000, random_state=SEED, **p),
-    "random_forest": lambda **p: RandomForestClassifier(n_jobs=-1, random_state=SEED, **p),
-    "lightgbm": lambda **p: LGBMClassifier(random_state=SEED, verbose=-1, **p),
+    "logistic_regression": lambda **p: LogisticRegression(**{"max_iter": 2000, "random_state": SEED, **p}),
+    "random_forest": lambda **p: RandomForestClassifier(**{"n_jobs": -1, "random_state": SEED, **p}),
+    "lightgbm": lambda **p: LGBMClassifier(**{"random_state": SEED, "verbose": -1, **p}),
 }
 
 
@@ -61,9 +62,11 @@ def main() -> None:
             scores[name] = oof
             metrics = {**summarize(y, oof, best_threshold(y, oof)),
                        # CV convention (S5): AP is the mean of the 5 fold scores, with its spread.
-                       "AP": fold_ap.mean(), "AP_fold_std": fold_ap.std(), "cv_seconds": seconds}
+                       "AP": fold_ap.mean(), "AP_fold_std": fold_ap.std()}
             rows.append({"model": name, **metrics})
-            log_candidate(name, pipe.named_steps["model"].get_params(), metrics, fold_ap)
+            # Timing goes to MLflow only: it changes slightly every run and would churn the CSV.
+            log_candidate(name, pipe.named_steps["model"].get_params(),
+                          {**metrics, "cv_seconds": seconds}, fold_ap)
 
         table = pd.DataFrame(rows)
         table.to_csv(table_file, index=False)

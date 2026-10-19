@@ -15,6 +15,33 @@ data:
   test_size: 0.20             # held out once, scored only at the very end
   cv_folds: 5                 # validation = stratified 5-fold CV on the other 80%
 
+# Optuna search spaces, one per model. Each trial is scored by mean AP over the same 5 CV folds.
+# Ranges follow the hyperparameters the course singled out (S2 regularisation, S4 ensembles).
+tuning:
+  n_trials: 30
+  logistic_regression:
+    fixed: {solver: saga, max_iter: 2000}      # saga is the solver that supports l1_ratio
+    space:
+      C: {type: float, low: 0.001, high: 10.0, log: true}    # inverse penalty strength (1 / lambda)
+      l1_ratio: {type: float, low: 0.0, high: 1.0}           # 0 = Ridge, 1 = Lasso, between = Elastic Net
+  random_forest:
+    fixed: {}
+    space:
+      n_estimators: {type: int, low: 100, high: 500}
+      max_depth: {type: int, low: 4, high: 30}
+      min_samples_leaf: {type: int, low: 1, high: 100, log: true}
+      max_features: {type: float, low: 0.1, high: 0.8}        # tree diversity vs strength
+  lightgbm:
+    fixed: {subsample_freq: 1}                 # needed for subsample to take effect
+    space:
+      n_estimators: {type: int, low: 100, high: 1000}
+      learning_rate: {type: float, low: 0.01, high: 0.2, log: true}
+      num_leaves: {type: int, low: 8, high: 128, log: true}
+      min_child_samples: {type: int, low: 5, high: 200, log: true}
+      subsample: {type: float, low: 0.5, high: 1.0}
+      colsample_bytree: {type: float, low: 0.4, high: 1.0}
+      reg_lambda: {type: float, low: 0.001, high: 10.0, log: true}
+
 # MLflow: local SQLite store + artifact folder, both git-ignored.
 tracking:
   db: mlflow.db

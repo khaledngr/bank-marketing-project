@@ -39,8 +39,8 @@ Run each step from the project root, with the virtual environment active.
 | 3 | Class imbalance: remedies + cost-based threshold | `python -m src.imbalance` | done |
 | 4 | Model comparison: logistic regression, random forest, LightGBM | `python -m src.models` | done |
 | 5 | One Pipeline: features + ColumnTransformer + model | `build_pipeline()` in `src/models.py` | done |
-| 6 | Optuna tuning with stratified CV | | planned |
-| 7 | Experiment tracking (MLflow) | logged automatically by steps 2-4 | done |
+| 6 | Optuna tuning with stratified CV (30 trials per model) | `python -m src.tuning` | done |
+| 7 | Experiment tracking (MLflow) | logged automatically by steps 2-4 and 6 | done |
 | 8 | Explainability (SHAP) | | planned |
 | 9 | Calibration | | planned |
 | 10 | Fairness audit on age groups | | planned |
@@ -61,7 +61,7 @@ then open http://127.0.0.1:5000 and the `bank-marketing` experiment.
 ## Project structure
 
 ```
-config.yaml       paths, seed, split sizes, business costs
+config.yaml       paths, seed, split sizes, business costs, Optuna search spaces
 src/
   config.py       loads config.yaml
   data.py         load, rename, target, drop leakage, train/test split, CV folds
@@ -69,6 +69,7 @@ src/
   features.py     step 2: engineered features + preprocessing (imputer, scaler, one-hot)
   imbalance.py    step 3: compare remedies, pick the profit-maximising threshold
   models.py       steps 4-5: the single Pipeline + 3-model comparison
+  tuning.py       step 6: Optuna search per model, search spaces in config.yaml
   tracking.py     step 7: MLflow logging (one parent run per experiment, one child per candidate)
   evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit
   plots.py        shared figure style
