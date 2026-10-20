@@ -45,8 +45,8 @@ served prediction endpoint. A tuned LightGBM reaches an average precision (AP) o
 untouched test set (random: 0.117). Calling the 24\% of clients above a profit-optimal threshold
 reaches 67\% of subscribers and earns \eur{2,711} per 1,000 clients, 3.2$\times$ more than calling
 everyone. Probabilities are well calibrated (ECE 0.010), but a time-ordered check shows they go
-stale when the base rate shifts. Age-group thresholds close an equal-opportunity gap from 35 to 5
-points at a cost of 6\% of profit.
+stale when the base rate shifts. Age-group thresholds shrink the measured equal-opportunity gap from 35
+to 5 points at a cost of 6\% of profit.
 \end{abstract}
 
 %=====================================================================
@@ -215,7 +215,8 @@ MLflow (local SQLite store). One parent run per experiment with its tables and f
 one child run per candidate with all parameters, metrics, per-fold AP and the git commit. Covered:
 feature ablation, imbalance remedies, model comparison, 90 Optuna trials (plus each study's trial
 table), explainability, calibration, fairness, the final model (logged as an MLflow model) and the
-two supplementary checks. Fixed seeds: re-running the scripts rebuilds identical runs. The store itself
+two supplementary checks. One seed drives every split, model and sampler, so re-running the scripts should
+reproduce the same metrics (run IDs and timings differ). The store itself
 (\texttt{mlflow.db}) is not committed, so a reader rebuilds it by running the scripts ($\approx$ 20 min);
 Optuna trials carry parameters and metrics, artifacts are kept per study.
 
@@ -233,7 +234,7 @@ mean CV AP per trial, bar = fold standard deviation.}
 Tuned LightGBM fitted on 4 folds, explained on the 5th (7,234 unseen clients): same settings as the
 deployed model but not the deployed fit, so the test set stays untouched. Three global views:
 \textbf{gain} (training improvement), \textbf{permutation} (validation AP lost when shuffled; 10 repeats;
-\texttt{pdays}/\texttt{previous}/\texttt{poutcome} shuffled together) and \textbf{mean $|$SHAP$|$}
+\texttt{pdays}/\texttt{previous}/\texttt{poutcome}/\texttt{contacted\_before} shuffled together) and \textbf{mean $|$SHAP$|$}
 (log-odds contribution).
 
 \begin{figure}[H]
@@ -254,9 +255,11 @@ Right: false alarm, $p$ = 0.86, retiree with a previous success.}
 
 \textbf{Business sense.}
 \begin{itemize}
-  \item Previous campaign outcome dominates (AP $-0.145$ when shuffled): past buyers buy again. \checkmark
+  \item Previous-contact information dominates (AP $-0.145$ when its four columns are shuffled as
+  one group, so not directly comparable with single variables): past buyers buy again. \checkmark
   \item Housing loan $\downarrow$, higher balance $\uparrow$, many calls this campaign $\downarrow$, age U-shape. \checkmark
-  \item Job, education, default $\approx 0$: their information is already carried by the rest.
+  \item Job, education, default $\approx 0$: shuffling them costs no AP once the other variables are
+  known; we did not test whether they carry signal on their own (e.g.\ job = retired overlaps with age).
   \item \texttt{month}, \texttt{contact} and \texttt{day} partly encode \emph{when} the call happened
   (drift): \texttt{contact}=unknown fills the first 28\% of the file (2008) and almost nothing after,
   and \texttt{day} (day of month) has no client meaning. Treat these as timing, not behaviour.
@@ -351,7 +354,8 @@ $\rightarrow$ \eur{2,551} per 1,000 clients ($-6\%$).}
 \end{figure}
 
 \dwr{Report both policies; the API returns both decisions.}
-{Mitigation closes the equal-opportunity gap (intervals overlap). Fewer unwanted calls to seniors
+{Mitigation shrinks the measured recall gap from 35 to 5 points; the group intervals now overlap,
+which means no gap is detectable, not that the groups are proven equal. Fewer unwanted calls to seniors
 (75\% $\rightarrow$ 29\%) is a side effect, not the criterion.}
 {$-6\%$ profit; levelling down: the gap closes mostly by calling fewer young and senior clients, which
 skips calls worth $+$\eur{11.5} at $p = 0.33$; precision gap grows (0.25 vs.\ 0.54), i.e.\ predictive
@@ -397,7 +401,8 @@ Trained on the first 80\% of the file (yes 6.7\%), scored on the last 20\% (yes 
 still ranks (AP 0.487 vs.\ 0.316 by chance, ROC-AUC 0.69), but the lift falls from 4.1$\times$ to
 1.5$\times$, probabilities lag the new base rate (mean 16\% vs.\ 32\% observed, ECE 0.16), and calling
 everyone would earn more (\eur{10,791} vs.\ \eur{7,291} per 1,000). Under drift the model must be
-recalibrated and its threshold re-checked each campaign.
+recalibrated and its threshold re-checked each campaign. Caveat: the hyperparameters come from the
+random-split tuning, which saw late rows, so this check is, if anything, slightly optimistic.
 
 %=====================================================================
 \section{Conclusion}
