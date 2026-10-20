@@ -234,7 +234,8 @@ mean CV AP per trial, bar = fold standard deviation.}
 Tuned LightGBM fitted on 4 folds, explained on the 5th (7,234 unseen clients): same settings as the
 deployed model but not the deployed fit, so the test set stays untouched. Three global views:
 \textbf{gain} (training improvement), \textbf{permutation} (validation AP lost when shuffled; 10 repeats;
-\texttt{pdays}/\texttt{previous}/\texttt{poutcome}/\texttt{contacted\_before} shuffled together) and \textbf{mean $|$SHAP$|$}
+\texttt{pdays}/\texttt{previous}/\texttt{poutcome} shuffled together, \texttt{contacted\_before} follows as it is
+derived from \texttt{pdays} inside the Pipeline) and \textbf{mean $|$SHAP$|$}
 (log-odds contribution).
 
 \begin{figure}[H]
@@ -255,7 +256,7 @@ Right: false alarm, $p$ = 0.86, retiree with a previous success.}
 
 \textbf{Business sense.}
 \begin{itemize}
-  \item Previous-contact information dominates (AP $-0.145$ when its four columns are shuffled as
+  \item Previous-contact information dominates (AP $-0.145$ when its three raw columns are shuffled as
   one group, so not directly comparable with single variables): past buyers buy again. \checkmark
   \item Housing loan $\downarrow$, higher balance $\uparrow$, many calls this campaign $\downarrow$, age U-shape. \checkmark
   \item Job, education, default $\approx 0$: shuffling them costs no AP once the other variables are
