@@ -19,6 +19,7 @@ data:
 # Ranges follow the hyperparameters the course singled out (S2 regularisation, S4 ensembles).
 tuning:
   n_trials: 30
+  nested_trials: 15                            # per outer fold in the nested-CV check
   logistic_regression:
     fixed: {solver: saga, max_iter: 2000}      # saga is the solver that supports l1_ratio
     space:
