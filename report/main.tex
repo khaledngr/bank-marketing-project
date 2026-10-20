@@ -44,8 +44,9 @@ costs \eur{5}, a subscription earns \eur{50}. We built a leakage-free pipeline f
 served prediction endpoint. A tuned LightGBM reaches an average precision (AP) of 0.476 on an
 untouched test set (random: 0.117). Calling the 24\% of clients above a profit-optimal threshold
 reaches 67\% of subscribers and earns \eur{2,711} per 1,000 clients, 3.2$\times$ more than calling
-everyone. Probabilities are well calibrated (ECE 0.010). Age-group thresholds close an
-equal-opportunity gap from 35 to 5 points at a cost of 6\% of profit.
+everyone. Probabilities are well calibrated (ECE 0.010), but a time-ordered check shows they go
+stale when the base rate shifts. Age-group thresholds close an equal-opportunity gap from 35 to 5
+points at a cost of 6\% of profit.
 \end{abstract}
 
 %=====================================================================
@@ -75,8 +76,8 @@ documents as ordered by date (May 2008 -- Nov 2010).}
 \dwr{Drop \texttt{duration} (call length) before any split.}
 {It is only known after the call (calls $<$ 90 s convert at 0.7\%, $>$ 6 min at 33\%): pure leakage.}
 {Time drift: the rate rises from 3\% to 47\% along the file and the split is random, so the test
-score describes clients from the same period, not a future campaign. No client ID: repeated clients
-across the split cannot be ruled out.}
+score describes clients from the same period, not a future campaign (quantified by a time-ordered
+check, Section~\ref{sec:final}). No client ID: repeated clients across the split cannot be ruled out.}
 
 %=====================================================================
 \section{Feature engineering}
@@ -108,7 +109,7 @@ Raw columns & 0.402 & 0.445 \\
 \label{tab:ablation}
 \end{table}
 
-\dwr{Keep the three features; drop two others tested (overdraft flag, loan count) that did not help.}
+\dwr{Keep the three features: cheap, interpretable, and they never lower AP.}
 {Linear model gains +0.006 AP (it cannot bend on its own); trees gain nothing measurable (they find
 thresholds and U-shapes themselves).}
 {Gains are within fold noise. \texttt{life\_stage} derives from age, the sensitive attribute (Section~\ref{sec:fairness}).}
@@ -148,8 +149,10 @@ dashed = call everyone).}
 \end{figure}
 
 \dwr{Cost-based threshold (0.11); no class weights, no SMOTE.}
-{Weights and SMOTE do not improve AP (SMOTE interpolates one-hot columns) and weights distort
-probabilities. The threshold doubles profit vs.\ 0.5 and lands next to the break-even 0.10.}
+{Weights and SMOTE do not improve AP and both distort probabilities: mean prediction 36\% with
+weights (ECE 0.24) and 16\% with SMOTE (ECE 0.04), vs.\ 11.6\% (ECE 0.006) plain, for 11.7\% observed.
+SMOTE also interpolates one-hot columns (SMOTENC would not, but SMOTE already loses). The threshold
+doubles profit vs.\ 0.5 and lands next to the break-even 0.10.}
 {Threshold chosen on the same out-of-fold scores we report (checked on test). Profit depends on the
 assumed costs; the profit curve is flat between 0.09 and 0.15 (Figure~\ref{fig:imbalance}).}
 
@@ -183,7 +186,7 @@ Random forest & 0.412 & 0.448 & \eur{2,525} & \eur{2,613} & 0.12 & 0.32 & 0.65 \
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.55\textwidth]{tuning_history}
-\caption{Optuna: best mean CV AP so far per trial; curves flatten after 10--20 trials.}
+\caption{Optuna: best mean CV AP so far per trial; most of the gain comes in the first 10--20 trials.}
 \label{fig:tuning}
 \end{figure}
 
@@ -199,9 +202,11 @@ Random forest & 0.412 & 0.448 & \eur{2,525} & \eur{2,613} & 0.12 & 0.32 & 0.65 \
 
 \dwr{Tuned LightGBM as final model.}
 {Best AP, ROC-AUC and profit; the course's working model.}
-{Its lead over a tuned random forest ($\approx$ 0.011 AP) is about one fold std. Best CV scores are
-mildly optimistic (same folds select and score); the test set gives the honest number. Tree count was
-tuned instead of early stopping, which would need an extra split inside each fold.}
+{Its lead over a tuned random forest ($\approx$ 0.011 AP) is about one fold std. The same folds select
+and score, so we checked with nested CV (\texttt{src/nested\_cv.py}: 5 outer folds, 15 Optuna trials
+and the threshold chosen inside each): AP 0.458 $\pm$ 0.012 and \eur{2,667} vs.\ 0.459 and \eur{2,676},
+threshold 0.10--0.11 in every fold, so the selection bias is negligible. Tree count was tuned instead
+of early stopping, which would need an extra split inside each fold.}
 
 %=====================================================================
 \section{Experiment tracking}\label{sec:tracking}
@@ -209,8 +214,10 @@ tuned instead of early stopping, which would need an extra split inside each fol
 MLflow (local SQLite store). One parent run per experiment with its tables and figures as artifacts;
 one child run per candidate with all parameters, metrics, per-fold AP and the git commit. Covered:
 feature ablation, imbalance remedies, model comparison, 90 Optuna trials (plus each study's trial
-table), explainability, calibration, fairness and the final model (logged as an MLflow model).
-Fixed seeds: re-running the scripts rebuilds identical runs.
+table), explainability, calibration, fairness, the final model (logged as an MLflow model) and the
+two supplementary checks. Fixed seeds: re-running the scripts rebuilds identical runs. The store itself
+(\texttt{mlflow.db}) is not committed, so a reader rebuilds it by running the scripts ($\approx$ 20 min);
+Optuna trials carry parameters and metrics, artifacts are kept per study.
 
 \begin{figure}[H]
 \centering
@@ -223,7 +230,8 @@ mean CV AP per trial, bar = fold standard deviation.}
 %=====================================================================
 \section{Explainability}
 
-Tuned LightGBM fitted on 4 folds, explained on the 5th (7,234 unseen clients). Three global views:
+Tuned LightGBM fitted on 4 folds, explained on the 5th (7,234 unseen clients): same settings as the
+deployed model but not the deployed fit, so the test set stays untouched. Three global views:
 \textbf{gain} (training improvement), \textbf{permutation} (validation AP lost when shuffled; 10 repeats;
 \texttt{pdays}/\texttt{previous}/\texttt{poutcome} shuffled together) and \textbf{mean $|$SHAP$|$}
 (log-odds contribution).
@@ -249,8 +257,9 @@ Right: false alarm, $p$ = 0.86, retiree with a previous success.}
   \item Previous campaign outcome dominates (AP $-0.145$ when shuffled): past buyers buy again. \checkmark
   \item Housing loan $\downarrow$, higher balance $\uparrow$, many calls this campaign $\downarrow$, age U-shape. \checkmark
   \item Job, education, default $\approx 0$: their information is already carried by the rest.
-  \item \texttt{month} and \texttt{contact} partly encode \emph{when} the call happened (drift):
-  treat with caution.
+  \item \texttt{month}, \texttt{contact} and \texttt{day} partly encode \emph{when} the call happened
+  (drift): \texttt{contact}=unknown fills the first 28\% of the file (2008) and almost nothing after,
+  and \texttt{day} (day of month) has no client meaning. Treat these as timing, not behaviour.
   \item Views disagree as expected: \texttt{contact} is \#1 by SHAP but \#3 by permutation
   (\texttt{month} substitutes when it is shuffled); age is high by gain (training-based, favours
   continuous features) but low by permutation.
@@ -293,6 +302,7 @@ Isotonic (CV) & 0.458 & 0.0810 & 0.003 & 11.7\% & \eur{2,651} \\
 
 \dwr{Keep the model uncalibrated; trust its probabilities for the call rule.}
 {Already calibrated: in the 10--20\% bin, where decisions are made, predicted = observed = 13.2\%.
+Brier 0.081 vs.\ 0.103 for always predicting 11.7\% (skill score 0.22).
 Slightly under-confident at 20--40\% (predicts 25\%, observes 31\%). Isotonic halves ECE but not Brier
 and lowers profit: simpler wins. Log-loss training and no reweighting (Section~\ref{sec:imbalance}) keep it honest.}
 {Calibration goes stale under drift; group-level calibration differs (ECE 0.010--0.049 per age group on test).}
@@ -341,11 +351,13 @@ $\rightarrow$ \eur{2,551} per 1,000 clients ($-6\%$).}
 \end{figure}
 
 \dwr{Report both policies; the API returns both decisions.}
-{Mitigation closes the equal-opportunity gap (intervals overlap) and cuts unwanted calls to seniors
-(75\% $\rightarrow$ 29\%).}
-{$-6\%$ profit; some interested young/senior clients no longer called (levelling down); precision gap
-grows (0.25 vs.\ 0.54), i.e.\ predictive parity breaks; only 39 young subscribers in test; using age
-explicitly is a policy and legal choice for the bank.}
+{Mitigation closes the equal-opportunity gap (intervals overlap). Fewer unwanted calls to seniors
+(75\% $\rightarrow$ 29\%) is a side effect, not the criterion.}
+{$-6\%$ profit; levelling down: the gap closes mostly by calling fewer young and senior clients, which
+skips calls worth $+$\eur{11.5} at $p = 0.33$; precision gap grows (0.25 vs.\ 0.54), i.e.\ predictive
+parity breaks; only 39 young subscribers in test (recall CI 0.48--0.77), so the small gap is not
+statistically established; using age explicitly is disparate treatment, a legal choice for the bank
+(EU).}
 
 %=====================================================================
 \section{Final evaluation and deployment}\label{sec:final}
@@ -377,20 +389,32 @@ same fitted preprocessing as in training.
 \dwr{Ship the tuned LightGBM with threshold 0.11 behind the API.}
 {Test matches CV (AP 0.476 vs.\ 0.459, within fold noise); 3.2$\times$ the profit of calling everyone;
 one call in three converts vs.\ one in eight at random.}
-{Same-period test set (drift); proof of concept without authentication, batch scoring or monitoring
-of drift and calibration.}
+{Same-period test set; proof of concept without authentication, batch scoring or monitoring of
+drift and calibration.}
+
+\textbf{Supplementary time-ordered check} (\texttt{src/temporal.py}; the main test is untouched).
+Trained on the first 80\% of the file (yes 6.7\%), scored on the last 20\% (yes 31.6\%): the model
+still ranks (AP 0.487 vs.\ 0.316 by chance, ROC-AUC 0.69), but the lift falls from 4.1$\times$ to
+1.5$\times$, probabilities lag the new base rate (mean 16\% vs.\ 32\% observed, ECE 0.16), and calling
+everyone would earn more (\eur{10,791} vs.\ \eur{7,291} per 1,000). Under drift the model must be
+recalibrated and its threshold re-checked each campaign.
 
 %=====================================================================
 \section{Conclusion}
 
 A calibrated, explainable LightGBM with a cost-based threshold roughly triples the profit of an
-untargeted campaign; its age gap is measurable and can be reduced at a quantified cost. Next step:
-a time-ordered evaluation on a later campaign.
+untargeted campaign; its age gap is measurable and can be reduced at a quantified cost. The
+time-ordered check shows the main limit: when the base rate shifts, probabilities go stale, so the
+model needs recalibration and monitoring per campaign before real use.
 
 \section*{Contribution statement}
-We worked together on every part (pair programming): framing, analysis, modelling, evaluation,
-fairness, API and report. Both of us appear on every commit; the main author alternates for balance.
-\textit{[To complete by the team.]}
+\textbf{How we worked.} Most of the project was built in joint sessions on one laptop (Khaled's),
+with Claude Code as assistant; we discussed and decided each step together. Because the work was
+shared, we split commit authorship between us afterwards, so the Git author field records that
+split, not who typed each line; this is also why commit times cluster.
+
+\textbf{Who led what.} \textit{[To complete by the team, one line per step, e.g.\ ``Calibration
+(req.~9): led by \ldots, reviewed by \ldots''.]}
 
 \section*{Use of AI assistants}
 We used Claude Code (Anthropic) as a coding assistant: it drafted code and text under our direction;

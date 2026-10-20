@@ -21,7 +21,7 @@ money, so we predict who is likely to subscribe and call only the clients worth 
 ## Quickstart
 
 ```bash
-python3.13 -m venv .venv && source .venv/bin/activate
+python3.13 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python -m src.eda
 ```
@@ -41,12 +41,14 @@ Run each step from the project root, with the virtual environment active, in thi
 | 4 | Model comparison: logistic regression, random forest, LightGBM | `python -m src.models` | done |
 | 5 | One Pipeline: features + ColumnTransformer + model | `build_pipeline()` in `src/models.py` | done |
 | 6 | Optuna tuning with stratified CV (30 trials per model) | `python -m src.tuning` | done |
-| 7 | Experiment tracking (MLflow) | logged automatically by steps 2-4, 6, 8, 9 and 10 | done |
+| 7 | Experiment tracking (MLflow) | logged automatically by steps 2-4, 6, 8-11 and the supplementary checks | done |
 | 8 | Explainability: gain, permutation, SHAP (global + 4 clients) | `python -m src.explain` | done |
 | 9 | Calibration: reliability diagram, Brier, ECE; raw vs Platt vs isotonic | `python -m src.calibration` | done |
 | 10 | Fairness audit on age groups + mitigation (designed on CV; test comparison in the final step) | `python -m src.fairness` | done |
 | 11 | Final model + one-time test evaluation (all decisions frozen) | `python -m src.final` | done |
 | 12 | Prediction API (FastAPI) | `uvicorn src.api:app --reload` | done |
+| + | Supplementary: time-ordered split (first 80% of rows -> last 20%) | `python -m src.temporal` | done |
+| + | Supplementary: nested CV of the tuned LightGBM (about 15 min) | `python -m src.nested_cv` | done |
 
 ### Serving predictions
 
@@ -99,6 +101,8 @@ src/
   calibration.py  step 9: are the probabilities honest? (reliability, Brier, ECE)
   fairness.py     step 10: age-group audit (equal opportunity) + age-group thresholds
   final.py        step 11: refit on all training data, score the test set once, save the model
+  temporal.py     supplementary: train on the earliest 80% of rows, score the latest 20% (drift)
+  nested_cv.py    supplementary: nested CV, so tuning does not score its own choices
   api.py          FastAPI app: POST /predict for one client, GET /health
   evaluation.py   shared metrics: out-of-fold scores, AP, precision, recall, profit, ECE
   plots.py        shared figure style
@@ -108,7 +112,7 @@ reports/
 report/
   main.tex        the written report (LaTeX); build with `tectonic -X compile report/main.tex`
   main.pdf        the compiled report
-artifacts/        final_model.joblib, used by the API (git-ignored, rebuilt by step 11)
+artifacts/models/ final_model.joblib, used by the API (git-ignored, rebuilt by step 11)
 mlflow.db, mlruns/ MLflow runs and their artifacts (git-ignored, rebuilt by re-running the steps)
 data/             dataset cache (git-ignored)
 ```
