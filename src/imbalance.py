@@ -12,7 +12,11 @@ Remedies compared on LightGBM (the course's working model), all inside 5-fold CV
                    LightGBM from each training fold (is_unbalance), so no fold sees
                    its validation labels
 3. SMOTE         - synthetic positives, generated inside each training fold only
-Then for each, the threshold is chosen to maximise profit on out-of-fold scores.
+Then for each, the threshold is chosen to maximise profit on out-of-fold scores, and Brier / ECE
+show how far each remedy moves the probabilities away from the observed rate.
+
+SMOTE runs after one-hot encoding and scaling, so synthetic clients can have in-between category
+values; SMOTENC (categorical-aware) would avoid that, but SMOTE already loses to the plain model.
 
 Run: python -m src.imbalance
 """
@@ -20,11 +24,12 @@ import pandas as pd
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline as ImbPipeline
 from lightgbm import LGBMClassifier
+from sklearn.metrics import brier_score_loss
 from sklearn.pipeline import Pipeline
 
 from src.config import SEED, path
 from src.data import load_split
-from src.evaluation import best_threshold, out_of_fold, summarize
+from src.evaluation import best_threshold, expected_calibration_error, out_of_fold, summarize
 from src.features import make_preprocessing
 from src.plots import pr_and_profit
 from src.tracking import log_candidate, parent_run
@@ -59,7 +64,11 @@ def main() -> None:
             for rule, t in [("default 0.5", 0.5), ("profit-optimal", best_threshold(y, oof))]:
                 metrics = {**summarize(y, oof, t),
                            # CV convention (S5): AP is the mean of the 5 fold scores.
-                           "AP": fold_ap.mean(), "AP_fold_std": fold_ap.std()}
+                           "AP": fold_ap.mean(), "AP_fold_std": fold_ap.std(),
+                           # Re-weighting and resampling shift the probabilities: these show by how much.
+                           "brier": brier_score_loss(y, oof),
+                           "ECE": expected_calibration_error(y, oof),
+                           "mean_predicted": oof.mean()}
                 rows.append({"remedy": name, "threshold_rule": rule, **metrics})
                 params = {"remedy": name, "threshold_rule": rule,
                           **pipe.named_steps["model"].get_params()}
